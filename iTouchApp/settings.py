@@ -38,9 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'authentication',
     'rest_framework',
     'drf_yasg',
+    'authentication',
+    'gestiondesemployes',
+    'gestiondesproduits',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -64,6 +67,9 @@ SWAGGER_SETTINGS={
             'in':'header'
         }
     }
+}
+SPECTACULAR_SETTINGS = {
+    'COMPONENT_SPLIT_REQUEST': True
 }
 
 TEMPLATES = [
@@ -126,7 +132,7 @@ REST_FRAMEWORK={
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=10),
+    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=50),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=1),
     }
 
@@ -149,6 +155,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR,'media')
+
 EMAIL_BACKEND = config('EMAIL_BACKEND')
 EMAIL_USE_TLS= config('EMAIL_USE_TLS')
 EMAIL_HOST = config('EMAIL_HOST')

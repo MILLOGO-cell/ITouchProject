@@ -10,20 +10,41 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         max_length=68, min_length=6, write_only=True)
     
-    class Meta:
-        model=User 
-        fields=['email','username','password']
-        
+    confirm_password = serializers.CharField(
+        max_length=68, min_length=6, write_only=True)
+    
+   
     def validate(self,attrs):
         email = attrs.get('email', '')
         username = attrs.get('username', '')
         if not username.isalnum():
-            raise serializers.ValidationError('The username should contain alphanumeric characters')
+            raise serializers.ValidationError("Le nom d'utilisateur doit contenir des caractères alphanumeriques")
         return attrs
+    
+    def validate_password(self,attrs):
+        password= self.initial_data.get("password")
+        confirm_password= self.initial_data.get("confirm_password")
+        if not password or not confirm_password:
+            raise serializers.ValidationError('Veuillez entrer votre mot de passe')
+        if password != confirm_password:
+            raise serializers.ValidationError('Les mots de passe de correspondent pas!')
+        return attrs
+    class Meta:
+        model=User 
+        fields=['email','username','password','confirm_password',]
+        
         
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
-    
+        # return User.objects.create_user(**validated_data)
+        user = User.objects.create(
+            username=validated_data['username'],
+            email=validated_data['email'],
+        )
+        user.set_password(validated_data['password'])
+        # user.set_password(validated_data['confirm_password'])
+        user.save()
+
+        return user
 class EmailVerificationSerializer(serializers.ModelSerializer):
     token = serializers.CharField(max_length=555)
     
