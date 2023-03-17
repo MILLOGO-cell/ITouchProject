@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'authentication',
     'gestiondesemployes',
     'gestiondesproduits',
+    'gestiondesmateriels',
     'drf_spectacular',
 ]
 

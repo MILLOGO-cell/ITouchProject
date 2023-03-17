@@ -6,7 +6,7 @@ from shortuuid.django_fields import ShortUUIDField
 class Materiel(models.Model):
     nom = models.CharField(max_length=100)
     prix_consigne = models.IntegerField()
-    date_acquisition = models.Date(auto_add_now=True)
+    date_acquisition = models.DateField(auto_now=True)
     adresse = models.CharField(max_length=200)
     description = models.TextField()
     stock_courant = models.CharField(max_length=50)

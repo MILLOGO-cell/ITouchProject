@@ -27,7 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         if not password or not confirm_password:
             raise serializers.ValidationError('Veuillez entrer votre mot de passe')
         if password != confirm_password:
-            raise serializers.ValidationError('Les mots de passe de correspondent pas!')
+            raise serializers.ValidationError('Les mots de passe ne correspondent pas!')
         return attrs
     class Meta:
         model=User 
