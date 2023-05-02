@@ -1,9 +1,7 @@
-from django.shortcuts import render
 
-# Create your views here.
-from django.shortcuts import render
-from rest_framework import generics, status, views
-from .serializers import RegisterSerializer,LoginSerializer,EmailVerificationSerializer,ResetPasswordEmailRequestSerializer,SetNewPasswordSerializer,PasswordTokenCheckApiSerializer
+from django.contrib.auth import get_user_model
+from rest_framework import generics, status, views, permissions
+from .serializers import RegisterSerializer,LoginSerializer,EmailVerificationSerializer,ResetPasswordEmailRequestSerializer,PasswordResetSerializer,UserSerializer
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
@@ -21,50 +19,85 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
 from .utils import Util
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, permissions,parsers
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from django.conf import settings
+import random
+from django.utils import timezone
+
+User = get_user_model()
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_image_url(request, id):
+    my_object = get_object_or_404(User, id=id)
+    image_url = settings.MEDIA_URL + str(my_object.photo)
+    return JsonResponse({'image_url': image_url})
 
 class RegisterView(generics.GenericAPIView):
     
     serializer_class = RegisterSerializer
     renderer_classes =(UserRenderer,)
+    parser_classes = (parsers.FormParser, parsers.MultiPartParser,parsers.FileUploadParser)
     
     def post(self, request):
         user = request.data 
-        serializer=self.serializer_class(data=user)
+        serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        user_data=serializer.data
+        user_data = serializer.data
         user = User.objects.get(email=user_data['email'])
-        token = RefreshToken.for_user(user).access_token 
-        current_site=get_current_site(request).domain
-        relativeLink = reverse('email-verify')      
-        absurl = 'http://'+current_site+relativeLink+"?token="+str(token)
-        email_body='Hi '+user.username+' Use the link below to verify your email \n'+ absurl
-        data = {'email_body':email_body,'to_email':user.email,
-                'email_subject': 'Verify your email'}
+        
+        # Generer un code de vérification à 6 chiffres
+        verification_code = random.randint(100000, 999999)
+        
+        # Enregistrer le code de vérification dans le modèle utilisateur
+        user.verification_code = verification_code
+        user.save()
+        
+        # Envoyer l'email de vérification
+        email_body = 'Bonjour ' + user.username + ', utilise ce code pour activer votre compte : ' + str(verification_code)
+        data = {'email_body': email_body, 'to_email': user.email, 'email_subject': "Vérification d'email"}
         Util.send_email(data)
         
-        return Response(user_data,status=status.HTTP_201_CREATED)
+        return Response(user_data, status=status.HTTP_201_CREATED)
+
 
 class VerifyEmail(views.APIView):
     serializer_class = EmailVerificationSerializer
-    token_param_config = openapi.Parameter(
-        'token', in_=openapi.IN_QUERY, description='Description', type=openapi.TYPE_STRING)
    
-    @swagger_auto_schema(manual_parameters=[token_param_config])
-    def get(self,request):
-        token =request.GET.get('token')
+    def get(self, request):
+        code = request.GET.get('verification_code')
+        if not code:
+            return Response({'error':'Code de vérification non communiqué'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-           payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-           user=User.objects.get(id=payload['user_id'])
-           if not user.is_verified:
-                user.is_verified = True
-                user.save()
-           return Response({'email':'Successfully activated'}, status=status.HTTP_200_OK)   
-        except jwt.ExpiredSignatureError as identifier:
-            return Response({'error':'Activation Expired'}, status=status.HTTP_400_BAD_REQUEST)
-        except jwt.exceptions.DecodeError as identifier:
-            return Response({'error':'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+            user = User.objects.get(verification_code=code)
+        except User.DoesNotExist:
+            return Response({'error':"Le code de vérification n'a pas été trouvé"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.is_verified:
+            return Response({'error':'Email déjà vérifié'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verifier si le code de verification a expiré(10 minutes)
+        time_elapsed = timezone.now() - user.created_at
+        if time_elapsed.total_seconds() > 600:
+            return Response({'error':'Le code de vérification a expiré'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Marquer l'utilisateur comme vérifié
+        user.is_verified = True
+        user.save()
+        # Vérifier si l'utilisateur a été vérifié, sinon le supprimer
+        if not user.is_verified:
+            user.delete()
+            return Response({'error': 'L\'utilisateur a été supprimé car le code de vérification a expiré.'}, status=status.HTTP_400_BAD_REQUEST)
         
+        return Response({'email':'Activé avec succès'}, status=status.HTTP_200_OK)
+  
 class LogiAPIView(generics.GenericAPIView):
     serializer_class=LoginSerializer
     
@@ -73,7 +106,26 @@ class LogiAPIView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         
         return Response(serializer.data,status=status.HTTP_200_OK)
-    
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_info(request):
+    user = request.user
+    data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'photo': user.photo.url if user.photo else None,
+    }
+    return Response(data, status=status.HTTP_200_OK)   
+
+class UserEditView(generics.UpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = (parsers.FormParser, parsers.MultiPartParser,parsers.FileUploadParser)
+
+    def get_object(self):
+        return self.request.user
 
 class RequestPasswordResetEmail(generics.GenericAPIView):
     serializer_class= ResetPasswordEmailRequestSerializer   
@@ -84,37 +136,36 @@ class RequestPasswordResetEmail(generics.GenericAPIView):
         
         if User.objects.filter(email=email).exists():
                 user = User.objects.get(email=email)
-                uidb64 = urlsafe_base64_encode(smart_bytes(user.id))
-                token = PasswordResetTokenGenerator().make_token(user)       
-                current_site=get_current_site(request=request).domain
-                relativeLink = reverse('password-reset-confirm', kwargs={'uidb64': uidb64, 'token':token})      
-                absurl = 'http://'+current_site+relativeLink
-                email_body='Hello, \n Use link below to reset your password \n'+ absurl
-                data = {'email_body':email_body,'to_email':user.email,
-                    'email_subject': 'Reset your password'}
-                
+                # Generer un code de vérification à 6 chiffres
+                code = random.randint(100000, 999999)
+                user.reset_code = code
+                user.save()
+                email_body = f'Bonjour,\n utilise le code {code} pour vérifier votre adresse e-mail et réinitialiser votre mot de passe.'
+                data = {'email_body': email_body, 'to_email': user.email, 'email_subject': 'Vérification d\'adresse e-mail'}
                 Util.send_email(data)
-       
-        return Response({'success': 'We have sent you a link to reset your password'}, status=status.HTTP_200_OK)
+
+        return Response({'success': 'Nous vous avons envoyé un e-mail avec un code de vérification'}, status=status.HTTP_200_OK)
     
-class PasswordTokenCheckApi(generics.GenericAPIView):
-    serializer_class = PasswordTokenCheckApiSerializer
-    def get(self,request,uidb64,token):
-        try:
-            id = smart_str(urlsafe_base64_decode(uidb64))
-            user=User.objects.get(id=id)
-            if not PasswordResetTokenGenerator().check_token(user, token):
-                return Response({'error','Token is not valid, please request a new one'},  status=status.HTTP_401_UNAUTHORIZED)         
-            return Response({'success':True,'message':'Credentials Valid','uidb64':uidb64,'token':token},status=status.HTTP_200_OK) 
-       
-        except DjangoUnicodeDecodeError as identifier:
-           if not PasswordResetTokenGenerator().check_token(user):
-                return Response({'error','Token is not valid, please request a new one'},  status=status.HTTP_401_UNAUTHORIZED)
-            
-class SetNewPasswordAPIView(generics.GenericAPIView):
-    serializer_class = SetNewPasswordSerializer
-    
-    def patch(self,request):
-        serializer = self.serializer_class(data=request.data)       
-        serializer.is_valid(raise_exception=True)
-        return Response({'success':True,'message':'Password reset success'},status=status.HTTP_200_OK)
+class PasswordResetView(views.APIView):
+        
+    serializer_class = PasswordResetSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            code = serializer.validated_data['code']
+            password = serializer.validated_data['password']
+            try:
+                user = User.objects.get(email=email, reset_code=code)
+                user.set_password(password)
+                user.reset_code = None
+                user.save()
+                email_body = f'Bonjour,\n votre mot de passe a été réinitailiser avec succès.'
+                data = {'email_body': email_body, 'to_email': user.email, 'email_subject': 'Réinitialisation de mot de passe'}
+                Util.send_email(data)
+                return Response({'success': 'Votre mot de passe a été réinitialisé avec succès'}, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({'error': 'Code de vérification invalide'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

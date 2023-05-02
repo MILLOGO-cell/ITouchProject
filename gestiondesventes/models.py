@@ -16,7 +16,7 @@ class Vente(models.Model):
         return self.date_creation
     
 class AvanceRetenu(models.Model):
-    vente = models.ForeignKey(to=Vente, on_delete=models.SET_NULL)
+    vente = models.ForeignKey(to=Vente, on_delete=models.SET_NULL,null=True, blank=True)
     avance =  models.IntegerField()
     retenu = models.IntegerField()
     bonus = models.IntegerField()
@@ -107,7 +107,7 @@ class ProduitAvoirPris(models.Model):
     produit_vente = models.ForeignKey(to=ProduitVente, on_delete=models.CASCADE)
     numero =  models.IntegerField()
     quantite = models.IntegerField()
-    date_= models.DateField(auto_now=True)
+    date= models.DateField(auto_now=True)
     est_servi = models.BooleanField(default=False)
     delais = models.DateField(auto_now=False)
     date_servi = models.DateField(auto_now=True)

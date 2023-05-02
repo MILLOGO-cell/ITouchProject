@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import datetime,os
 from pathlib import Path
 from decouple import config
-
+from corsheaders.defaults import default_methods
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_USER_MODEL = 'authentication.User'
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    "corsheaders",
     'django.contrib.staticfiles',
     'rest_framework',
     'drf_yasg',
@@ -44,10 +45,12 @@ INSTALLED_APPS = [
     'gestiondesemployes',
     'gestiondesproduits',
     'gestiondesmateriels',
+    'gestiondesventes',
     'drf_spectacular',
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -72,6 +75,18 @@ SWAGGER_SETTINGS={
 SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True
 }
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
+
+CORS_ALLOW_ALL_ORIGINS = True  
+# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+    "http://10.0.2.2:8081",
+    
+    
+]
+
 
 TEMPLATES = [
     {
@@ -95,12 +110,18 @@ WSGI_APPLICATION = 'iTouchApp.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'djongo',
+#         'NAME': config('DATABASE_NAME'),
+#         'HOST': config('DATABASE_HOST'),
+#         'PORT': config('DATABASE_PORT', cast=int),
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'djongo',
-        'NAME': config('DATABASE_NAME'),
-        'HOST': config('DATABASE_HOST'),
-        'PORT': config('DATABASE_PORT', cast=int),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'mydatabase',  
     }
 }
 
@@ -141,7 +162,7 @@ SIMPLE_JWT = {
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
 TIME_ZONE = 'UTC'
 

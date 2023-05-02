@@ -3,7 +3,7 @@ from authentication.models import User
 from shortuuid.django_fields import ShortUUIDField
 
 class Poste(models.Model):
-    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    # owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     intitule = models.CharField(max_length=150)
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now_add=True)
@@ -16,7 +16,7 @@ class Employe(models.Model):
         ('ACTIF','Actif'),('INACTIF','Inactif'),('CONGES','Congés'),
         ('SUSPENDU','Suspendu'),('RENVOYE','Renvoyé'),
     )
-    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    # owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     nom = models.CharField(max_length=150)
     prenom = models.CharField(max_length=255)
     email = models.EmailField(unique=True, null=True, blank=True)

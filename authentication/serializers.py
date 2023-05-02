@@ -5,14 +5,35 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.utils.encoding import smart_str,smart_bytes, force_str, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth import get_user_model
+from django.utils.crypto import get_random_string
+from django.db.models import Q
+from rest_framework import status
+
+class UserSerializer(serializers.ModelSerializer):
+    photo = serializers.ImageField(
+        max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'photo')
+        extra_kwargs = {
+            'photo': {'required': False},
+        }
 
 class RegisterSerializer(serializers.ModelSerializer):
+    photo = serializers.ImageField( 
+        max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
     password = serializers.CharField(
         max_length=68, min_length=6, write_only=True)
     
     confirm_password = serializers.CharField(
         max_length=68, min_length=6, write_only=True)
     
+    verification_code = serializers.CharField(max_length=6, required=False)
+
+    extra_kwargs = {
+            'photo': {'required': False},
+        }
    
     def validate(self,attrs):
         email = attrs.get('email', '')
@@ -29,28 +50,39 @@ class RegisterSerializer(serializers.ModelSerializer):
         if password != confirm_password:
             raise serializers.ValidationError('Les mots de passe ne correspondent pas!')
         return attrs
+
     class Meta:
         model=User 
-        fields=['email','username','password','confirm_password',]
+        fields=['email','username','password','confirm_password','photo','verification_code']
         
         
     def create(self, validated_data):
-        # return User.objects.create_user(**validated_data)
+        email = validated_data['email']
+        username = validated_data['email']
+        if User.objects.filter(Q(email=email) | Q(username=username)).exists():
+            errors = {}
+            if User.objects.filter(email=email).exists():
+                errors['email'] = ['Un utilisateur avec cette adresse e-mail existe déjà.']
+            if User.objects.filter(username=username).exists():
+                errors['username'] = ['Un utilisateur avec ce nom d\'utilisateur existe déjà.']
+            print(errors)
+            raise serializers.ValidationError(errors, code=status.HTTP_409_CONFLICT)
         user = User.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email'],
+            username=username,
+            email=email,
         )
         user.set_password(validated_data['password'])
-        # user.set_password(validated_data['confirm_password'])
+        user.verification_code = get_random_string(length=6, allowed_chars='0123456789')
         user.save()
 
         return user
+
 class EmailVerificationSerializer(serializers.ModelSerializer):
     token = serializers.CharField(max_length=555)
-    
+    verification_code = serializers.CharField(max_length=6, required=True)
     class Meta:
         model = User
-        fields = ['token']
+        fields = ['token','verification_code']
 
 class LoginSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255, min_length=3)
@@ -69,11 +101,11 @@ class LoginSerializer(serializers.ModelSerializer):
         user=auth.authenticate(email=email,password=password)
         
         if not user:
-            raise AuthenticationFailed('Invalid credentials, try again')
+            raise AuthenticationFailed('Identifiants invalides, veuillez recommencer!',)
         if not user.is_active:
-            raise AuthenticationFailed('Accont disabled, contact admin')
+            raise AuthenticationFailed('Compte désactivé, veuillez activer votre compte!',)
         if not user.is_verified:
-            raise AuthenticationFailed('Email is not verified')
+            raise AuthenticationFailed('Email non vérifiée',)
         
         return {
             'email':user.email,
@@ -89,33 +121,18 @@ class ResetPasswordEmailRequestSerializer(serializers.Serializer):
     class Meta:
         field= ["email"]
 
-class PasswordTokenCheckApiSerializer(serializers.Serializer):
+class PasswordResetSerializer(serializers.Serializer):
+   email = serializers.EmailField()
+   code = serializers.IntegerField()
+   password = serializers.CharField(min_length=8, write_only=True)
+
+   def validate(self, data):
+        email = data.get('email')
+        code = data.get('code')
+        password = data.get('password')
+        if not User.objects.filter(email=email, reset_code=code).exists():
+            raise serializers.ValidationError('Code de vérification invalide')
+        return data
+
+ 
     
-    class Meta:
-        fields=[]
-class SetNewPasswordSerializer(serializers.Serializer):
-    password = serializers.CharField(min_length=6, max_length=68,write_only=True)
-    token = serializers.CharField(min_length=1, write_only=True)
-    uidb64 = serializers.CharField(min_length=1,write_only=True)
-    
-    class Meta:
-        fields=['password', 'token', 'uidb64']
-        
-    def validate(self, attrs):
-        try:
-            password= attrs.get('password')
-            token = attrs.get('token')
-            uidb64 = attrs.get('uidb64')
-            
-            id = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(id=id)
-            
-            if not PasswordResetTokenGenerator().check_token(user, token):
-                raise AuthenticationFailed('The reset link is invalid', 401)  
-            
-            user.set_password(password)
-            user.save()
-            return (user) 
-        except Exception as e:
-                raise AuthenticationFailed('The reset link is invalid', 401)   
-        return super().validate(attrs)

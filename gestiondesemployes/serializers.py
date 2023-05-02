@@ -5,14 +5,15 @@ class PosteSerializer(serializers.ModelSerializer):
    
     class Meta:
         model = Poste
-        exclude = ['owner',]
+        # exclude = ['owner',]
+        fields=('__all__')
         
 class EmployeSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Employe
-        exclude = ['owner',]
+        # exclude = ['owner',]
     
-        
+        fields=('__all__')
  
         
