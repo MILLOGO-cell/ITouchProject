@@ -1,8 +1,37 @@
 from django.db import models
+from authentication.models import User
+from gestiondesemployes.models import Employe
+from shortuuid.django_fields import ShortUUIDField
+import shortuuid
+
+class Monnaie(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    numero_ticket = ShortUUIDField(length = 8, max_length = 20, prefix = "tick_num",
+        alphabet = "abcd1234"
+    )
+    montant = models.IntegerField()
+    est_remis = models.BooleanField(default=False)
+    delai = models.CharField(max_length=100, null=True,blank=True)
+    date_remise = models.DateField(auto_now=False,null=True,blank=True)
+    date_emission = models.DateField(auto_now=True)
+    
+    def __str__(self):
+        return self.date_emission 
+    def generate_numero_ticket(self):
+        return "Ticket_" + shortuuid.uuid()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.numero_ticket = self.generate_numero_ticket()
+        super().save(*args, **kwargs)
+
 
 class Vente(models.Model):
-    heure_debut = models.DateField()
-    heure_fin = models.DateField()
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    heure_debut = models.CharField(max_length=25)
+    heure_fin = models.CharField(max_length=25)
+    employe=models.ForeignKey(Employe, on_delete=models.CASCADE, null=True, blank=True)
+    monnaie=models.ForeignKey(Monnaie, on_delete=models.CASCADE, null=True, blank=True)
     nv_fond_caisse = models.IntegerField()
     rep_fond_caisse = models.IntegerField()
     recette = models.IntegerField()
@@ -16,6 +45,7 @@ class Vente(models.Model):
         return self.date_creation
     
 class AvanceRetenu(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     vente = models.ForeignKey(to=Vente, on_delete=models.SET_NULL,null=True, blank=True)
     avance =  models.IntegerField()
     retenu = models.IntegerField()
@@ -26,18 +56,10 @@ class AvanceRetenu(models.Model):
 
     def __str__(self):
         return self.date_creation
-class Monnaie(models.Model):
-    vente = models.ForeignKey(to=Vente, on_delete=models.CASCADE)
-    numero_ticket = models.CharField(max_length=150)
-    montant = models.IntegerField()
-    est_remis = models.CharField(max_length=150)
-    delai = models.DateField(auto_now=False)
-    date_remise = models.DateField(auto_now=False)
-    date_emission = models.DateField(auto_now=False)
     
-    def __str__(self):
-        return self.date_emission
+
 class Client(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     nom =  models.CharField(max_length=150)
     prenom = models.CharField(max_length=250)
     contact = models.CharField(max_length=150)
@@ -45,8 +67,11 @@ class Client(models.Model):
     date_modification = models.DateField(auto_now=True)
     
     def __str__(self):
-        return self.nom + self.prenom
+        return self.nom + self.prenom 
+    
+    
 class Credit(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     vente = models.ForeignKey(to=Vente, on_delete=models.CASCADE)
     client = models.ForeignKey(to=Client, on_delete=models.CASCADE)
     numero_facture =  models.IntegerField()
@@ -57,7 +82,17 @@ class Credit(models.Model):
 
     def __str__(self):
         return self.date_creation
+    
+    def generate_numero_facture(self):
+        return "fact_" + shortuuid.uuid()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.numero_facture = self.generate_numero_facture()
+        super().save(*args, **kwargs)
+
 class PerteMateriel(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     vente = models.ForeignKey(to=Vente, on_delete=models.CASCADE)
     quantite =  models.IntegerField()
     prix_retenu = models.IntegerField()
@@ -66,7 +101,9 @@ class PerteMateriel(models.Model):
      
     def __str__(self):
         return self.date_creation
+    
 class DepenseVente(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     vente = models.ForeignKey(to=Vente, on_delete=models.CASCADE)
     nom = models.CharField(max_length=150)
     montant_dep = models.IntegerField()
@@ -76,7 +113,9 @@ class DepenseVente(models.Model):
     
     def __str__(self):
         return self.date_creation
+    
 class ProduitVente(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     vente = models.ForeignKey(to=Vente, on_delete=models.CASCADE)
     report = models.IntegerField()
     prix_vente = models.IntegerField()
@@ -91,7 +130,9 @@ class ProduitVente(models.Model):
     
     # def save(sef, *args, **kwargs):
     #     self.report =
+
 class ProduitConsigne(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     produit_vente = models.ForeignKey(to=ProduitVente, on_delete=models.CASCADE)
     numero =  models.IntegerField()
     quantite = models.IntegerField()
@@ -103,7 +144,9 @@ class ProduitConsigne(models.Model):
     
     def __str__(self):
         return self.date_creation
+    
 class ProduitAvoirPris(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     produit_vente = models.ForeignKey(to=ProduitVente, on_delete=models.CASCADE)
     numero =  models.IntegerField()
     quantite = models.IntegerField()
@@ -114,7 +157,9 @@ class ProduitAvoirPris(models.Model):
     
     def __str__(self):
         return self.date_creation
+    
 class PerteVenteProduitContenant(models.Model):
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     produit_vente = models.ForeignKey(to=ProduitVente, on_delete=models.CASCADE)
     quantite_contenu_simple =  models.IntegerField()
     quantite_contenant_plein = models.IntegerField()

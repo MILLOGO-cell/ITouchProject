@@ -58,7 +58,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         
     def create(self, validated_data):
         email = validated_data['email']
-        username = validated_data['email']
+        username = validated_data['username']
         if User.objects.filter(Q(email=email) | Q(username=username)).exists():
             errors = {}
             if User.objects.filter(email=email).exists():

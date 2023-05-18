@@ -1,9 +1,10 @@
 from django.db import models
 from authentication.models import User
 from shortuuid.django_fields import ShortUUIDField
+import shortuuid
 
 class Poste(models.Model):
-    # owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     intitule = models.CharField(max_length=150)
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now_add=True)
@@ -16,11 +17,12 @@ class Employe(models.Model):
         ('ACTIF','Actif'),('INACTIF','Inactif'),('CONGES','Congés'),
         ('SUSPENDU','Suspendu'),('RENVOYE','Renvoyé'),
     )
-    # owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     nom = models.CharField(max_length=150)
     prenom = models.CharField(max_length=255)
     email = models.EmailField(unique=True, null=True, blank=True)
-    poste = models.OneToOneField(Poste, null=True, blank=True,on_delete=models.SET_NULL)
+    image = models.ImageField(upload_to='images/',blank=True,null=True)
+    poste = models.ForeignKey(Poste, null=True, blank=True, on_delete=models.SET_NULL)
     statut = models.CharField(max_length=9, choices=ETAT_DE_SERVICE, default='INACTIF')
     infoPiece = models.CharField(max_length=255)
     telephone = models.CharField(max_length=20)
@@ -33,9 +35,18 @@ class Employe(models.Model):
     def __str__(self):
         return self.nom + self.prenom
 
+    def get_poste_intitule(self):
+        if self.poste:
+            return self.poste.intitule
+        else:
+            return ""
+
+
 class FicheDePaie(models.Model):
-    num_fich = ShortUUIDField(length = 8, max_length = 20, prefix = "Fiche_paie",
-        alphabet = "abcdefg1234"
+    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    employe = models.ForeignKey(Employe, on_delete=models.CASCADE, null=True, blank=True)
+    num_fich = ShortUUIDField( max_length = 20, prefix = "Fiche_",
+        alphabet = "abcd1234"
     )
     date_debut = models.DateField(auto_now_add=True)
     date_fin = models.DateField(auto_now_add=True)
@@ -51,6 +62,13 @@ class FicheDePaie(models.Model):
     commentaire = models.TextField()
     
     def __str__(self):
-        return self.num_fiche
+        return self.num_fich
     
+    def generate_num_fich(self):
+        return "Fiche_paie_" + shortuuid.uuid()
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.num_fich = self.generate_num_fich()
+        super().save(*args, **kwargs)
     

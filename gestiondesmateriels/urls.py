@@ -3,9 +3,9 @@ from rest_framework import routers
 from .import views
 
 router = routers.DefaultRouter()
-router.register('employe', views.EmployeViewset)
-router.register('poste', views.PosteViewset)
-router.register('fiche_de_paie', views.FicheView)
+router.register('materiel', views.MaterielViewSet)
+router.register('fournisseur', views.FournisseurViewSet)
+router.register('commande_materiel', views.CommandeMaterielViewSet)
 urlpatterns = [
      path('', include(router.urls))
 ]

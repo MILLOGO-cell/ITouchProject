@@ -1,68 +1,79 @@
 from rest_framework import serializers
 from .models import Vente, AvanceRetenu,Monnaie,Client,Credit,PerteMateriel,DepenseVente,ProduitVente,ProduitConsigne,ProduitAvoirPris,PerteVenteProduitContenant
 
-class VenteSerializer(serializers.ModelSerializer):
-    
-     class Meta:
-        model = Vente 
-        fields = '__all__'
-        
-class AvanceRetenuSerializer(serializers.ModelSerializer):
-    
-     class Meta:
-        model = AvanceRetenu 
-        fields = '__all__'
-        
 class MonnaieSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = Monnaie 
-        fields = '__all__'
+        exclude= ['owner'] 
+
+class VenteSerializer(serializers.ModelSerializer):
+    monnaie = MonnaieSerializer(required=False)
+    class Meta:
+        model = Vente 
+        exclude= ['owner']  
+
+    def create(self, validated_data):
+        monnaie_data = validated_data.pop('monnaie', None)
+        vente = Vente.objects.create(**validated_data)
+
+        if monnaie_data:
+            Monnaie.objects.create(vente=vente, **monnaie_data)
+
+        return vente
+ 
+class AvanceRetenuSerializer(serializers.ModelSerializer):
+    
+     class Meta:
+        model = AvanceRetenu 
+        exclude= ['owner'] 
+        
+
 
 class ClientSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = Client 
-        fields = '__all__'
+        exclude= ['owner'] 
         
 class CreditSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = Credit 
-        fields = '__all__'
+        exclude= ['owner'] 
         
 class PerteMaterielSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = PerteMateriel 
-        fields = '__all__'
+        exclude= ['owner'] 
         
 class DepenseVenteSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = DepenseVente 
-        fields = '__all__'
+        exclude= ['owner'] 
 
 class ProduitVenteSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = ProduitVente 
-        fields = '__all__'
+        exclude= ['owner'] 
 
 class ProduitConsigneSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = ProduitConsigne 
-        fields = '__all__'
+        exclude= ['owner'] 
 
 class ProduitAvoirPrisSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = ProduitAvoirPris 
-        fields = '__all__'
+        exclude= ['owner'] 
 
 class PerteVenteProduitContenantSerializer(serializers.ModelSerializer):
     
      class Meta:
         model = PerteVenteProduitContenant 
-        fields = '__all__'
+        exclude= ['owner'] 

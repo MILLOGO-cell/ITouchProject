@@ -9,6 +9,8 @@ router.register('sous_categorie', views.SousCategorieViewSet)
 router.register('emballage', views.EmballageViewSet)
 router.register('type_contenant', views.TypeContenantViewSet)
 router.register('fabriquant', views.FabriquantViewSet)
+router.register('fournisseur_produit', views.FournisseurProduitViewSet)
+router.register('commande_produit', views.CommandeProduitViewSet)
 
 urlpatterns = [
     path('', include(router.urls))

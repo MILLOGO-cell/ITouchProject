@@ -3,14 +3,36 @@ from .serializers import VenteSerializer, AvanceRetenuSerializer,MonnaieSerializ
 from .models import Vente, AvanceRetenu,Monnaie,Client,Credit,PerteMateriel,DepenseVente,ProduitVente,ProduitConsigne,ProduitAvoirPris,PerteVenteProduitContenant
 from rest_framework import viewsets, permissions
 from .permissions import IsOwner
+from rest_framework.exceptions import ValidationError
 
 class VenteViewSet(viewsets.ModelViewSet):
     queryset = Vente.objects.all()
     serializer_class = VenteSerializer
     permission_classes = (permissions.IsAuthenticated,)
     
+    def perform_create(self, serializer):
+        monnaie_data = self.request.data.get('monnaie')
+        vente = serializer.save(owner=self.request.user)
+
+        if monnaie_data:
+            monnaie_serializer = MonnaieSerializer(data=monnaie_data)
+            if monnaie_serializer.is_valid():
+                monnaie = monnaie_serializer.save(owner=self.request.user)
+                vente.monnaie = monnaie
+                vente.save()
+            else:
+                raise ValidationError(monnaie_serializer.errors)
+
+        return vente
+    
+class MonnaieViewSet(viewsets.ModelViewSet):
+    queryset = Monnaie.objects.all()
+    serializer_class = MonnaieSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
+
     
 class AvanceRetenuViewSet(viewsets.ModelViewSet):
     queryset = AvanceRetenu.objects.all()
@@ -20,13 +42,6 @@ class AvanceRetenuViewSet(viewsets.ModelViewSet):
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
 
-class MonnaieViewSet(viewsets.ModelViewSet):
-    queryset = Monnaie.objects.all()
-    serializer_class = MonnaieSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def perform_create(self,serializer):
-        return serializer.save(owner=self.request.user)
 
 class ClientViewSet(viewsets.ModelViewSet):
     queryset = Client.objects.all()
@@ -51,6 +66,7 @@ class PerteMaterielViewSet(viewsets.ModelViewSet):
 
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
+    
 class DepenseVenteViewSet(viewsets.ModelViewSet):
     queryset = DepenseVente.objects.all()
     serializer_class = DepenseVenteSerializer
