@@ -28,7 +28,7 @@ class UserManager(BaseUserManager):
         return user 
 
 class User(AbstractBaseUser,PermissionsMixin):
-    username = models.CharField(max_length=255, unique=True, db_index=True)
+    username = models.CharField(max_length=255, db_index=True)
     email = models.EmailField(max_length=255, unique=True, db_index=True)
     photo = models.ImageField(upload_to='images/',blank=True,null=True)
     verification_code = models.CharField(max_length=6, null=True)

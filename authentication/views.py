@@ -27,7 +27,9 @@ from django.http import JsonResponse
 from django.conf import settings
 import random
 from django.utils import timezone
-
+from rest_framework import status
+from rest_framework.views import APIView
+from .serializers import UserEditSerializer
 User = get_user_model()
 
 
@@ -120,10 +122,11 @@ def user_info(request):
     return Response(data, status=status.HTTP_200_OK)   
 
 class UserEditView(generics.UpdateAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserEditSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = (parsers.FormParser, parsers.MultiPartParser,parsers.FileUploadParser)
-
+    lookup_field = 'id'
+    
     def get_object(self):
         return self.request.user
 
@@ -169,3 +172,18 @@ class PasswordResetView(views.APIView):
                 return Response({'error': 'Code de vérification invalide'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+class UserEditAPIView(APIView):
+    def put(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+
+        if 'username' in request.data:
+            user.username = request.data['username']
+
+        if 'photo' in request.FILES:
+            user.photo = request.FILES['photo']
+
+        user.save()
+
+        serializer = UserEditSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
