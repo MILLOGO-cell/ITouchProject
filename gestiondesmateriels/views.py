@@ -8,7 +8,7 @@ class MaterielViewSet(viewsets.ModelViewSet):
     queryset = Materiel.objects.all().order_by('nom')
     serializer_class = MaterielSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = PageNumberPagination
+    pagination_class = None
 
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
@@ -28,7 +28,7 @@ class FournisseurViewSet(viewsets.ModelViewSet):
     queryset = Fournisseur.objects.all().order_by('enseigne')
     serializer_class = FournisseurSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = PageNumberPagination
+    pagination_class = None
 
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
@@ -41,7 +41,7 @@ class FournisseurViewSet(viewsets.ModelViewSet):
 class CommandeMaterielViewSet(viewsets.ModelViewSet):
     queryset = CommandeMateriel.objects.all()
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = PageNumberPagination
+    pagination_class = None
 
     def perform_create(self,serializer):
         serializer.save(owner=self.request.user)

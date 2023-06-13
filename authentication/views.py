@@ -1,36 +1,32 @@
-
 from django.contrib.auth import get_user_model
-from rest_framework import generics, status, views, permissions
-from .serializers import RegisterSerializer,LoginSerializer,EmailVerificationSerializer,ResetPasswordEmailRequestSerializer,PasswordResetSerializer,UserSerializer
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User
-from .utils import Util
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
-import jwt
-from django.conf import settings
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from .renderers import UserRenderer
-from django.utils.encoding import smart_str,smart_bytes, force_str, DjangoUnicodeDecodeError
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.contrib.sites.shortcuts import get_current_site
-from django.urls import reverse
-from .utils import Util
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import viewsets, permissions,parsers
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.conf import settings
-import random
 from django.utils import timezone
-from rest_framework import status
+from django.utils.encoding import smart_str, smart_bytes, force_str, DjangoUnicodeDecodeError
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework import generics, status, views, viewsets, permissions, parsers
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from .models import User
+from .serializers import (
+    RegisterSerializer,
+    LoginSerializer,
+    EmailVerificationSerializer,
+    ResetPasswordEmailRequestSerializer,
+    PasswordResetSerializer,
+    UserSerializer,
+    UserEditSerializer,
+)
+from .utils import Util
+from .renderers import UserRenderer
+import jwt
+import random
 from rest_framework.views import APIView
-from .serializers import UserEditSerializer
-User = get_user_model()
 
 
 @api_view(['GET'])
@@ -39,13 +35,15 @@ def get_image_url(request, id):
     my_object = get_object_or_404(User, id=id)
     image_url = settings.MEDIA_URL + str(my_object.photo)
     return JsonResponse({'image_url': image_url})
+from rest_framework.views import APIView
 
 class RegisterView(generics.GenericAPIView):
     
     serializer_class = RegisterSerializer
     renderer_classes =(UserRenderer,)
     parser_classes = (parsers.FormParser, parsers.MultiPartParser,parsers.FileUploadParser)
-    
+    allowed_methods = ['POST', 'OPTIONS']
+   
     def post(self, request):
         user = request.data 
         serializer = self.serializer_class(data=user)
@@ -67,8 +65,8 @@ class RegisterView(generics.GenericAPIView):
         Util.send_email(data)
         
         return Response(user_data, status=status.HTTP_201_CREATED)
-
-
+    
+    
 class VerifyEmail(views.APIView):
     serializer_class = EmailVerificationSerializer
    

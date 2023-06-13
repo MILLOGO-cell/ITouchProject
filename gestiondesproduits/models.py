@@ -13,7 +13,7 @@ class Categorie(models.Model):
 class SousCategorie(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     nom = models.CharField(max_length=150)
-    categorie = models.OneToOneField(Categorie,
+    categorie = models.ForeignKey(Categorie,
         on_delete=models.SET_NULL, null=True, blank=True)
    
     def __str__(self):
@@ -79,8 +79,8 @@ class CommandeProduit(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE)
     produit = models.ForeignKey(to=Produit, on_delete=models.SET_NULL,null=True, blank=True)
     fournisseur = models.ForeignKey(to=FournisseurProduit, on_delete=models.CASCADE,null=True, blank=True)
-    num_bordereaux = ShortUUIDField(length = 8, max_length = 20, prefix = "Com_prod",
-        alphabet = "abcdefg1234"
+    num_bordereaux = ShortUUIDField(length = 8, max_length = 100, prefix = "Com_prod",
+        alphabet = "abc123"
     )
     nom_livreur = models.CharField(max_length=100)
     prenom_livreur = models.CharField(max_length=250)

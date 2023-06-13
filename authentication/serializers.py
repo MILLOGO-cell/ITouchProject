@@ -25,7 +25,7 @@ class UserEditSerializer(serializers.ModelSerializer):
         max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
     class Meta:
         model = User
-        fields = ('id','username', 'photo')
+        fields = ('id','username','email' ,'photo')
         extra_kwargs = {
             'username': {'required': False},
             'photo': {'required': False},
@@ -34,7 +34,7 @@ class UserEditSerializer(serializers.ModelSerializer):
         validated_data.pop('email', None)  # Exclure le champ 'email' des données validées
         return super().partial_update(instance, validated_data)
 
-
+ 
 class RegisterSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField( 
         max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)

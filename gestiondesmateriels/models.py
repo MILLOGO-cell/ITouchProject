@@ -33,8 +33,8 @@ class CommandeMateriel(models.Model):
     quantite = models.IntegerField(null=True, blank=True)
     materiel = models.ForeignKey(to=Materiel, on_delete=models.CASCADE, null=True, blank=True)
     fournisseur = models.ForeignKey(to=Fournisseur, on_delete=models.CASCADE,null=True, blank=True)
-    num_bordereaux = ShortUUIDField(length = 8, max_length = 20, prefix = "Com_mat",
-        alphabet = "abcd1234"
+    num_bordereaux = ShortUUIDField(length = 8, max_length = 30, prefix = "Com_mat",
+        alphabet = "abc123"
     )
     nom_livreur = models.CharField(max_length=100)
     prenom_livreur = models.CharField(max_length=250)

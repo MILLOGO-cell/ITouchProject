@@ -75,7 +75,7 @@ SWAGGER_SETTINGS={
 SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True
 }
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2', '10.31.127.180','192.168.100.5','192.168.0.104']
 
 CORS_ALLOW_ALL_ORIGINS = True  
 # CORS_ALLOW_CREDENTIALS = True
@@ -83,6 +83,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
     "http://127.0.0.1:8081",
     "http://10.0.2.2:8081",
+    "http://10.31.127.180:8081",
+    "http://192.168.100.5:8081",
+    "http://192.168.0.104:8081",
     
     
 ]
@@ -118,6 +121,9 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT'),
+        # 'OPTIONS': {
+        #     'sql_mode': 'STRICT_ALL_TABLES',
+        # },
     }
 }
 # DATABASES = {
@@ -188,3 +194,4 @@ EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = config('EMAIL_PORT', cast=int)
 EMAIL_HOST_USER=config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD=config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')

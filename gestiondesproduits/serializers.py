@@ -42,7 +42,7 @@ class ProduitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Produit
         # exclude = ['owner']
-        fields ='__all__'
+        exclude =['owner']
 
 
 

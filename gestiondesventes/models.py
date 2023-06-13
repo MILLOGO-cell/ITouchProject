@@ -8,13 +8,13 @@ from gestiondesproduits.models import Produit
 
 class Monnaie(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
-    numero_ticket = ShortUUIDField(length = 8, max_length = 20, prefix = "tick_num",
-        alphabet = "abcd1234"
+    numero_ticket = ShortUUIDField(length = 8, max_length = 100, prefix = "tick_num",
+        alphabet = "abc123"
     )
     montant = models.IntegerField()
     est_remis = models.BooleanField(default=False)
     delai = models.CharField(max_length=100, null=True,blank=True)
-    date_remise = models.DateField(auto_now=False,null=True,blank=True)
+    date_remise = models.CharField(max_length=100, null=True,blank=True)
     date_emission = models.DateField(auto_now=True)
     
     def __str__(self):
@@ -77,8 +77,8 @@ class Credit(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     vente = models.ForeignKey(to=Vente, on_delete=models.CASCADE)
     client = models.ForeignKey(to=Client, on_delete=models.CASCADE)
-    numero_facture =  ShortUUIDField(length = 8, max_length = 20, prefix = "credit_",
-        alphabet = "abcd1234"
+    numero_facture =  ShortUUIDField(length = 8, max_length = 100, prefix = "credit_",
+        alphabet = "abc124"
     )
     montant = models.IntegerField()
     payer = models.BooleanField(default=False)
@@ -139,8 +139,8 @@ class ProduitVente(models.Model):
 class ProduitConsigne(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     produit_vente = models.ForeignKey(to=ProduitVente, on_delete=models.CASCADE)
-    numero =  ShortUUIDField(length = 8, max_length = 20, prefix = "num_",
-        alphabet = "abcd1234"
+    numero =  ShortUUIDField(length = 8, max_length = 100, prefix = "num_",
+        alphabet = "abc123"
     )
     quantite = models.IntegerField()
     delais = models.CharField(max_length=50,null=True,blank=True)
@@ -162,8 +162,8 @@ class ProduitConsigne(models.Model):
 class ProduitAvoirPris(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     produit_vente = models.ForeignKey(to=ProduitVente, on_delete=models.CASCADE,null=True, blank=True)
-    numero =  ShortUUIDField(length = 8, max_length = 20, prefix = "num_",
-        alphabet = "ab12"
+    numero =  ShortUUIDField(length = 8, max_length = 100, prefix = "num_",
+        alphabet = "abc123"
     )
     quantite = models.IntegerField()
     date= models.DateField(auto_now=True)

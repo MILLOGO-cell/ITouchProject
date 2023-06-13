@@ -11,7 +11,7 @@ from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 import logging
-
+from rest_framework import filters
 User = get_user_model()
 
 @api_view(['GET'])
@@ -25,6 +25,7 @@ class PosteViewset(viewsets.ModelViewSet):
     queryset = Poste.objects.all().order_by('intitule')
     serializer_class = PosteSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = None  
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
@@ -36,10 +37,11 @@ logger = logging.getLogger(__name__)
 class EmployeViewset(viewsets.ModelViewSet):
     queryset = Employe.objects.all().order_by('nom')
     serializer_class = EmployeSerializer 
-    pagination_class = PageNumberPagination
-
+    pagination_class = None  
     parser_classes = (parsers.FormParser, parsers.MultiPartParser,parsers.FileUploadParser)
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['statut']
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
@@ -68,7 +70,7 @@ class EmployeViewset(viewsets.ModelViewSet):
 class FicheView(viewsets.ModelViewSet):
     queryset = FicheDePaie.objects.all().order_by('date_fin')
     serializer_class = FicheSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = None
     permission_classes = (permissions.IsAuthenticated,)
 
     def perform_create(self,serializer):

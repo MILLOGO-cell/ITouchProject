@@ -45,8 +45,8 @@ class Employe(models.Model):
 class FicheDePaie(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     employe = models.ForeignKey(Employe, on_delete=models.CASCADE, null=True, blank=True)
-    num_fich = ShortUUIDField( max_length = 20, prefix = "Fiche_",
-        alphabet = "abcd1234"
+    num_fich = ShortUUIDField( max_length = 100, prefix = "Fiche_",
+        alphabet = "abc123"
     )
     date_debut = models.DateField(auto_now_add=True)
     date_fin = models.DateField(auto_now_add=True)

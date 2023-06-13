@@ -12,61 +12,67 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProduitSerializer
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (parsers.FormParser, parsers.MultiPartParser,parsers.FileUploadParser)
-    pagination_class = PageNumberPagination
+    pagination_class = None
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
-    
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 class CategorieViewSet(viewsets.ModelViewSet):
     queryset = Categorie.objects.all().order_by('nom')
     serializer_class = CategorieSerializer 
     permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPagination
+    pagination_class = None
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
-    
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 class SousCategorieViewSet(viewsets.ModelViewSet):
     queryset = SousCategorie.objects.all().order_by('nom')
     serializer_class = SousCategorieSerializer 
     permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPagination
+    pagination_class = None
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
-    
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 class FabriquantViewSet(viewsets.ModelViewSet):
     queryset = Fabriquant.objects.all().order_by('nom')
     serializer_class = FabriquantSerializer 
     permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPagination
+    pagination_class = None
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
-    
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 class EmballageViewSet(viewsets.ModelViewSet):
     queryset = Emballage.objects.all().order_by('nom')
     serializer_class = EmballageSerializer 
     permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPagination
+    pagination_class = None
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
-    
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 class TypeContenantViewSet(viewsets.ModelViewSet):
     queryset = TypeContenant.objects.all().order_by('nom')
     serializer_class = TypeContenantSerializer
     permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPagination
+    pagination_class = None
     
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
-    
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
 class FournisseurProduitViewSet(viewsets.ModelViewSet):
     queryset = FournisseurProduit.objects.all().order_by('enseigne')
     serializer_class = FournisseurProduitSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = PageNumberPagination
+    pagination_class = None
 
     def perform_create(self,serializer):
         return serializer.save(owner=self.request.user)
@@ -79,7 +85,7 @@ class FournisseurProduitViewSet(viewsets.ModelViewSet):
 class CommandeProduitViewSet(viewsets.ModelViewSet):
     queryset = CommandeProduit.objects.all()
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = PageNumberPagination
+    pagination_class = None
 
     def perform_create(self,serializer):
         serializer.save(owner=self.request.user)
