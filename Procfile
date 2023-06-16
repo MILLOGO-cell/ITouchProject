@@ -1,0 +1,1 @@
+web: python manage.py migrate && gunicorn iTouchApp.wsgi --log-level debug
