@@ -1,1 +1,1 @@
-web: python manage.py makemigration && python manage.py migrate && gunicorn iTouchApp.wsgi --log-level debug
+web: python manage.py makemigrations && python manage.py migrate && gunicorn iTouchApp.wsgi --log-level debug
