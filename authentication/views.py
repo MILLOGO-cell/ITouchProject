@@ -45,7 +45,7 @@ class RegisterView(generics.GenericAPIView):
     allowed_methods = ['POST', 'OPTIONS']
    
     def post(self, request):
-        user = request.data 
+        user = request.data.copy()
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()

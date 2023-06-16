@@ -9,7 +9,8 @@ from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
 from django.db.models import Q
 from rest_framework import status
-
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 class UserSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField(
         max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
@@ -53,8 +54,16 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self,attrs):
         email = attrs.get('email', '')
         username = attrs.get('username', '')
+        
         if not username.isalnum():
-            raise serializers.ValidationError("Le nom d'utilisateur doit contenir des caractères alphanumeriques")
+            raise serializers.ValidationError("Le nom d'utilisateur doit contenir des caractères alphanumériques")
+
+        try:
+            validate_email(email)
+       
+        except ValidationError:
+            raise serializers.ValidationError("Adresse e-mail invalide")
+
         return attrs
     
     def validate_password(self,attrs):

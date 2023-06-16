@@ -75,7 +75,7 @@ SWAGGER_SETTINGS={
 SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True
 }
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2', '10.31.127.180','192.168.100.5','192.168.0.104']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2', '10.31.127.180','192.168.100.5','192.168.0.104','http://itouch.hisiastudio.com','192.168.46.193']
 
 CORS_ALLOW_ALL_ORIGINS = True  
 # CORS_ALLOW_CREDENTIALS = True
@@ -85,7 +85,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://10.0.2.2:8081",
     "http://10.31.127.180:8081",
     "http://192.168.100.5:8081",
-    "http://192.168.0.104:8081",
+    "http://192.168.0.104:8081", 
+    "http://192.168.46.193:8081", 
+    "http://itouch.hisiastudio.com:8081"
     
     
 ]
@@ -159,6 +161,11 @@ REST_FRAMEWORK={
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ]
 }
 
 SIMPLE_JWT = {
