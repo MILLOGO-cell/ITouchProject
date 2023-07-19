@@ -11,17 +11,25 @@ class Materiel(models.Model):
     date_acquisition = models.DateField(auto_now=True)
     description = models.TextField()
     stock_courant = models.CharField(max_length=50)
-    is_active = models.BooleanField(default=False)
+    date_courant = models.DateTimeField(auto_now_add=False,null=True,blank=True)
+    brouillon = models.BooleanField(default=False)
+    est_utilise = models.BooleanField(default=False)
+    date_creation = models.DateTimeField(auto_now_add=True,null=True,blank=True)
+    date_modification = models.DateTimeField(auto_now_add=True,null=True,blank=True)
     
     def __str__(self):
         return self.nom
-
+    def save(self, *args, **kwargs):
+        if Materiel.objects.filter(owner=self.owner, nom=self.nom).exclude(pk=self.pk).exists():
+            raise ValueError("Un matériel avec le même nom existe déjà pour cet utilisateur.")
+        super().save(*args, **kwargs)
+        
 class Fournisseur(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE, blank=True, null=True)
     enseigne = models.CharField(max_length=200)
     telephone = models.CharField(max_length=50)
     email = models.EmailField(max_length=150, null=True, blank=True)
-    whatapp = models.CharField(max_length=20, null=True, blank=True)
+    whatsapp = models.CharField(max_length=20, null=True, blank=True)
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now_add=True)
     

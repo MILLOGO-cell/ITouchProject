@@ -1,5 +1,9 @@
 from rest_framework import serializers
 from .models import Vente, AvanceRetenu,Monnaie,Client,Credit,PerteMateriel,DepenseVente,ProduitVente,ProduitConsigne,ProduitAvoirPris,PerteVenteProduitContenant
+from rest_framework.exceptions import ValidationError
+from gestiondesproduits.serializers import ProduitSerializer
+from gestiondesproduits.models import Produit
+
 
 class MonnaieSerializer(serializers.ModelSerializer):
     
@@ -9,9 +13,10 @@ class MonnaieSerializer(serializers.ModelSerializer):
 
 class VenteSerializer(serializers.ModelSerializer):
     monnaie = MonnaieSerializer(required=False)
+
     class Meta:
         model = Vente 
-        exclude= ['owner']  
+        exclude = ['owner']  
 
     def create(self, validated_data):
         monnaie_data = validated_data.pop('monnaie', None)
@@ -21,6 +26,23 @@ class VenteSerializer(serializers.ModelSerializer):
             Monnaie.objects.create(vente=vente, **monnaie_data)
 
         return vente
+
+    def update(self, instance, validated_data):
+        monnaie_data = validated_data.pop('monnaie', None)
+
+        # Update the vente instance
+        instance = super().update(instance, validated_data)
+
+        if monnaie_data:
+            monnaie_serializer = MonnaieSerializer(instance.monnaie, data=monnaie_data)
+            if monnaie_serializer.is_valid():
+                monnaie = monnaie_serializer.save()
+                instance.monnaie = monnaie
+                instance.save()
+            else:
+                raise ValidationError(monnaie_serializer.errors)
+
+        return instance
  
 class AvanceRetenuSerializer(serializers.ModelSerializer):
     
@@ -54,11 +76,26 @@ class DepenseVenteSerializer(serializers.ModelSerializer):
         model = DepenseVente 
         exclude= ['owner'] 
 
+class ProduitVenteDetailsSerializer(serializers.ModelSerializer):
+    produit_details = ProduitSerializer(source='produit', read_only=True)
+
+    class Meta:
+        model = ProduitVente
+        exclude = ['owner']
+
+
 class ProduitVenteSerializer(serializers.ModelSerializer):
-    
-     class Meta:
-        model = ProduitVente 
-        exclude= ['owner'] 
+    produit = serializers.PrimaryKeyRelatedField(
+        queryset=Produit.objects.all(), write_only=True)
+
+    class Meta:
+        model = ProduitVente
+        exclude = ['owner']
+
+    def create(self, validated_data):
+        produit = validated_data.pop('produit', None)
+        produit_vente = ProduitVente.objects.create(produit=produit, **validated_data)
+        return produit_vente
 
 class ProduitConsigneSerializer(serializers.ModelSerializer):
     

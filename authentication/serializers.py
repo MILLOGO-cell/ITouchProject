@@ -16,24 +16,36 @@ class UserSerializer(serializers.ModelSerializer):
         max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
     class Meta:
         model = User
-        fields = ('email', 'username', 'photo')
+        fields = ('email', 'username', 'photo','company')
         extra_kwargs = {
             'photo': {'required': False},
+            'company': {'required': False},
         }
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
 
+    def validate(self, attrs):
+        if attrs['old_password'] == attrs['new_password']:
+            raise serializers.ValidationError("Le nouveau mot de passe doit être différent de l'ancien.")
+        return attrs
 class UserEditSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField(
         max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
     class Meta:
         model = User
-        fields = ('id','username','email' ,'photo')
+        fields = ('id','username','email' ,'photo','company')
         extra_kwargs = {
             'username': {'required': False},
             'photo': {'required': False},
+            'company': {'required': False},
         }
-    def partial_update(self, instance, validated_data):
-        validated_data.pop('email', None)  # Exclure le champ 'email' des données validées
-        return super().partial_update(instance, validated_data)
+    def update(self, instance, validated_data):
+        instance.username = validated_data.get('username', instance.username)
+        instance.photo = validated_data.get('photo', instance.photo)
+        instance.company = validated_data.get('company', instance.company)
+        instance.save()
+        return instance
 
  
 class RegisterSerializer(serializers.ModelSerializer):
@@ -77,7 +89,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=User 
-        fields=['email','username','password','confirm_password','photo','verification_code']
+        fields=['email','username','company','password','confirm_password','photo','verification_code']
         
         
     def create(self, validated_data):
@@ -111,12 +123,13 @@ class EmailVerificationSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255, min_length=3)
     password =serializers.CharField(max_length=68, min_length=6,write_only=True)
+    company =serializers.CharField(max_length=68, min_length=1,read_only=True)
     username = serializers.CharField(max_length=255, min_length=3,read_only=True)
     tokens =serializers.CharField(max_length=68, min_length=6,read_only=True)
     
     class Meta:
         model = User
-        fields = ['email','password','username','tokens']
+        fields = ['email','password','username','company','tokens']
         
     def validate(self,attrs):
         email=attrs.get('email', '')
@@ -134,6 +147,7 @@ class LoginSerializer(serializers.ModelSerializer):
         return {
             'email':user.email,
             'username': user.username,
+            'company': user.company,
             'tokens':user.tokens
         }
         

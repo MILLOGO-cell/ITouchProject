@@ -21,6 +21,7 @@ from .serializers import (
     PasswordResetSerializer,
     UserSerializer,
     UserEditSerializer,
+    ChangePasswordSerializer
 )
 from .utils import Util
 from .renderers import UserRenderer
@@ -115,10 +116,26 @@ def user_info(request):
         'id': user.id,
         'username': user.username,
         'email': user.email,
+        'company':user.company,
         'photo': user.photo.url if user.photo else None,
     }
     return Response(data, status=status.HTTP_200_OK)   
+class ChangePasswordView(APIView):
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
 
+        if not user.check_password(serializer.validated_data['old_password']):
+            return Response({"old_password": ["Le mot de passe actuel est incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.check_password(serializer.validated_data['new_password']):
+            return Response({"new_password": ["Le nouveau mot de passe doit être différent de l'ancien."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+
+        return Response(status=status.HTTP_200_OK)
 class UserEditView(generics.UpdateAPIView):
     serializer_class = UserEditSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -172,7 +189,7 @@ class PasswordResetView(views.APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 class UserEditAPIView(APIView):
-    def put(self, request, user_id):
+    def partial_update(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
 
         if 'username' in request.data:
@@ -180,7 +197,10 @@ class UserEditAPIView(APIView):
 
         if 'photo' in request.FILES:
             user.photo = request.FILES['photo']
-
+        
+        if 'company' in request.data:
+            user.company = request.data['company']
+        print(request.data)
         user.save()
 
         serializer = UserEditSerializer(user)

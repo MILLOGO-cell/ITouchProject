@@ -4,6 +4,7 @@ from .import views
 
 router = routers.DefaultRouter()
 router.register('produit', views.ProductViewSet)
+router.register('volume', views.UniteVolumeViewSet)
 router.register('categorie', views.CategorieViewSet)
 router.register('sous_categorie', views.SousCategorieViewSet)
 router.register('emballage', views.EmballageViewSet)
