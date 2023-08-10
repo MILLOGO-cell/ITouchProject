@@ -75,7 +75,7 @@ SWAGGER_SETTINGS={
 SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True
 }
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2', '10.31.127.180','192.168.100.5','192.168.0.104','http://itouch.hisiastudio.com','192.168.46.193','itouch.up.railway.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2', '10.31.127.180','192.168.100.5','192.168.0.104','http://itouch.hisiastudio.com','192.168.46.193','itouch.up.railway.app','192.168.100.43','192.168.0.105']
 
 CORS_ALLOW_ALL_ORIGINS = True  
 # CORS_ALLOW_CREDENTIALS = True
@@ -83,8 +83,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
     "http://127.0.0.1:8081",
     "http://10.0.2.2:8081",
+    "http://192.168.0.105:8081",
     "http://10.31.127.180:8081",
     "http://192.168.100.5:8081",
+    "http://192.168.100.43:8081",
     "http://192.168.0.104:8081", 
     "http://192.168.46.193:8081", 
     "http://itouch.up.railway.app:8081", 

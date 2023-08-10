@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
+
 from .serializers import (
     RegisterSerializer,
     LoginSerializer,
@@ -112,11 +113,19 @@ class LogiAPIView(generics.GenericAPIView):
 @permission_classes([IsAuthenticated])
 def user_info(request):
     user = request.user
+    selected_country_data = None
+    if user.selected_country:
+        selected_country_data = {
+            'id': user.selected_country.id,
+            'name': user.selected_country.nom,
+            # Ajoutez d'autres champs nécessaires ici
+        }
     data = {
         'id': user.id,
         'username': user.username,
         'email': user.email,
         'company':user.company,
+        'selected_country':selected_country_data,
         'photo': user.photo.url if user.photo else None,
     }
     return Response(data, status=status.HTTP_200_OK)   

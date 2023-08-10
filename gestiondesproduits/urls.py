@@ -12,6 +12,7 @@ router.register('type_contenant', views.TypeContenantViewSet)
 router.register('fabriquant', views.FabriquantViewSet)
 router.register('fournisseur_produit', views.FournisseurProduitViewSet)
 router.register('commande_produit', views.CommandeProduitViewSet)
+router.register('pays', views.PaysViewset)
 
 urlpatterns = [
     path('', include(router.urls))

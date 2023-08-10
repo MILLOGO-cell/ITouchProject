@@ -11,12 +11,14 @@ from django.db.models import Q
 from rest_framework import status
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from gestiondesproduits.models import Pays
 class UserSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField(
         max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
+    # selected_country = serializers.PrimaryKeyRelatedField(queryset=Pays.objects.all(), required=False)
     class Meta:
         model = User
-        fields = ('email', 'username', 'photo','company')
+        fields = ('email', 'username', 'photo','company', )
         extra_kwargs = {
             'photo': {'required': False},
             'company': {'required': False},
@@ -32,18 +34,22 @@ class ChangePasswordSerializer(serializers.Serializer):
 class UserEditSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField(
         max_length=None, allow_empty_file=False, allow_null=False, use_url=True, required=False)
+    selected_country = serializers.PrimaryKeyRelatedField(queryset=Pays.objects.all(), required=False)
     class Meta:
         model = User
-        fields = ('id','username','email' ,'photo','company')
+        fields = ('id','username','email' ,'photo','company','selected_country')
         extra_kwargs = {
+            'email': {'required': False},
             'username': {'required': False},
             'photo': {'required': False},
             'company': {'required': False},
+            'selected_country': {'required': False},
         }
-    def update(self, instance, validated_data):
+    def partial_update(self, instance, validated_data):
         instance.username = validated_data.get('username', instance.username)
         instance.photo = validated_data.get('photo', instance.photo)
         instance.company = validated_data.get('company', instance.company)
+        instance.selected_country = validated_data.get('selected_country', instance.selected_country)
         instance.save()
         return instance
 
@@ -126,15 +132,21 @@ class LoginSerializer(serializers.ModelSerializer):
     company =serializers.CharField(max_length=68, min_length=1,read_only=True)
     username = serializers.CharField(max_length=255, min_length=3,read_only=True)
     tokens =serializers.CharField(max_length=68, min_length=6,read_only=True)
-    
+    # selected_country = serializers.SerializerMethodField(source='get_selected_country')
     class Meta:
         model = User
-        fields = ['email','password','username','company','tokens']
-        
+        fields = ['email','password','username','company','tokens',  ]
+    
+    # def get_selected_country(self, user):
+    #     selected_country = user.selected_country
+    #     if selected_country:
+    #         print("selected$*******",selected_country)
+    #         return  selected_country
+    #     return None
+      
     def validate(self,attrs):
         email=attrs.get('email', '')
         password=attrs.get('password', '')
-        
         user=auth.authenticate(email=email,password=password)
         
         if not user:
@@ -143,15 +155,15 @@ class LoginSerializer(serializers.ModelSerializer):
             raise AuthenticationFailed('Compte désactivé, veuillez activer votre compte!',)
         if not user.is_verified:
             raise AuthenticationFailed('Email non vérifiée',)
-        
+         
         return {
             'email':user.email,
             'username': user.username,
             'company': user.company,
-            'tokens':user.tokens
+            'tokens':user.tokens,
+            # 'selected_country': self.get_selected_country(user) 
         }
         
-        return super().validate(attrs)
     
 class ResetPasswordEmailRequestSerializer(serializers.Serializer):
     email =serializers.EmailField(min_length=2)

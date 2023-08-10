@@ -1,5 +1,6 @@
 from django.db import models
 from authentication.models import User
+from django.contrib.auth import get_user_model
 from shortuuid.django_fields import ShortUUIDField
 import shortuuid
 from django.db.models import UniqueConstraint, Q
@@ -12,7 +13,7 @@ class Categorie(models.Model):
         return self.nom   
     def save(self, *args, **kwargs):
         if Categorie.objects.filter(owner=self.owner, nom=self.nom).exclude(pk=self.pk).exists():
-            raise ValueError("Une catégorie avec le même nom existe déjà pour cet utilisateur.")
+            raise ValidationError("Une catégorie avec le même nom existe déjà pour cet utilisateur.")
         super().save(*args, **kwargs)
     
 class SousCategorie(models.Model):
@@ -27,7 +28,12 @@ class SousCategorie(models.Model):
         constraints = [
             UniqueConstraint(fields=['owner', 'categorie', 'nom'], name='unique_owner_sous-categorie_nom')
         ]
-        
+    
+    def save(self, *args, **kwargs):
+        if SousCategorie.objects.filter(owner=self.owner, nom=self.nom).exclude(pk=self.pk).exists():
+            raise ValidationError("Une sous-catégorie avec le même nom existe déjà pour cet utilisateur.")
+        super().save(*args, **kwargs) 
+         
     def clean(self):
         # Vérifier l'unicité du nom du type de contenant pour le fabricant spécifique à l'utilisateur
         if SousCategorie.objects.filter(
@@ -46,7 +52,7 @@ class Fabriquant(models.Model):
     
     def save(self, *args, **kwargs):
         if Fabriquant.objects.filter(owner=self.owner, nom=self.nom).exclude(pk=self.pk).exists():
-            raise ValueError("Un fabriquant avec le même nom existe déjà pour cet utilisateur.")
+            raise ValidationError("Un fabriquant avec le même nom existe déjà pour cet utilisateur.")
         super().save(*args, **kwargs)
         
 class Emballage(models.Model):
@@ -61,15 +67,13 @@ class Emballage(models.Model):
         constraints = [
             UniqueConstraint(fields=['owner', 'fabriquant', 'nom'], name='unique_owner_emballage_nom')
         ]
+    
+    def save(self, *args, **kwargs):
+        if Emballage.objects.filter(owner=self.owner, nom=self.nom).exclude(pk=self.pk).exists():
+            raise ValidationError("Un emballage avec le même nom existe déjà pour cet utilisateur.")
+        super().save(*args, **kwargs)
         
-    def clean(self):
-        # Vérifier l'unicité du nom du type de contenant pour le fabricant spécifique à l'utilisateur
-        if Emballage.objects.filter(
-            owner=self.owner, fabriquant=self.fabriquant, nom=self.nom
-        ).exclude(pk=self.pk).exists():
-            raise ValidationError(
-                f"Un emballage avec le nom '{self.nom}' existe déjà pour ce fabricant."
-            )
+    
 class TypeContenant(models.Model):
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     fabriquant = models.ForeignKey(Fabriquant,on_delete=models.SET_NULL, null=True, blank=True)
@@ -81,29 +85,34 @@ class TypeContenant(models.Model):
 
     class Meta:
         constraints = [
-            UniqueConstraint(fields=['owner', 'fabriquant', 'nom'], name='unique_owner_typecontenant_nom')
+            UniqueConstraint(fields=['owner', 'fabriquant', 'nom',], name='unique_owner_typecontenant_nom')
         ]
+    
+    def save(self, *args, **kwargs):
+        if TypeContenant.objects.filter(owner=self.owner, nom=self.nom).exclude(pk=self.pk).exists():
+            raise ValidationError("Un type de contenant avec le même nom existe déjà pour cet utilisateur.")
+        super().save(*args, **kwargs)  
         
-    def clean(self):
-        # Vérifier l'unicité du nom du type de contenant pour le fabriquant spécifique à l'utilisateur
-        if TypeContenant.objects.filter(
-            owner=self.owner, fabriquant=self.fabriquant, nom=self.nom
-        ).exclude(pk=self.pk).exists():
-            raise ValidationError(
-                f"Un type de contenant avec le nom '{self.nom}' existe déjà pour ce fabricant."
-            )
+     
 class UniteVolume(models.Model):
-    owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
-    valeur = models.CharField(max_length=50)
+    # owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
+    valeur = models.CharField(max_length=50, unique=True)
     
     def __str__(self):
         return self.valeur 
     
-    def save(self, *args, **kwargs):
-        if UniteVolume.objects.filter(owner=self.owner, valeur=self.valeur).exclude(pk=self.pk).exists():
-            raise ValueError("Un volume avec la même valeur existe déjà pour cet utilisateur.")
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if self.owner and UniteVolume.objects.filter(owner=self.owner, valeur=self.valeur).exclude(pk=self.pk).exists():
+    #         raise ValidationError("Un volume avec la même valeur existe déjà pour cet utilisateur.")
+    #     super().save(*args, **kwargs)
         
+class Pays(models.Model):
+    nom = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.nom
+
+
 class Produit(models.Model): 
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
     sous_categorie = models.ForeignKey(SousCategorie,on_delete=models.SET_NULL, null=True, blank=True )
@@ -117,6 +126,8 @@ class Produit(models.Model):
     description = models.TextField(null=True, blank=True)
     volume = models.ForeignKey(UniteVolume,on_delete=models.SET_NULL, null=True, blank=True)
     brouillon = models.BooleanField(default=True,blank=True)
+    commun = models.BooleanField(default=False)
+    pays = models.ForeignKey(Pays, on_delete=models.SET_NULL, null=True, blank=True)
     en_vente = models.BooleanField(default=False,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -124,11 +135,12 @@ class Produit(models.Model):
     def __str__(self):
         return self.nom 
     
-    # def save(self, *args, **kwargs):
-    #     # Vérifier si le nom a été modifié et s'il existe déjà un autre produit avec le même nom de l'utilisateur
-    #     if self.pk is None or (self.pk is not None and self.__original_nom != self.nom and Produit.objects.filter(owner=self.owner, nom=self.nom).exists()):
-    #         raise ValueError("Un produit avec le même nom existe déjà pour cet utilisateur.")
-    #     super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        # Si le produit est défini comme "commun", définir le propriétaire sur None
+        if self.commun:
+            self.owner = None
+        
+        super().save(*args, **kwargs)
 
         
 class FournisseurProduit(models.Model):
@@ -146,7 +158,7 @@ class FournisseurProduit(models.Model):
     def save(self, *args, **kwargs):
         # Vérifier si un autre produit de l'utilisateur a le même nom  
         if FournisseurProduit.objects.filter(owner=self.owner, enseigne=self.enseigne).exclude(pk=self.pk).exists():
-            raise ValueError("Un fournisseur avec le même nom existe déjà pour cet utilisateur.")
+            raise ValidationError("Un fournisseur avec le même nom existe déjà pour cet utilisateur.")
         super().save(*args, **kwargs)
     
 class CommandeProduit(models.Model):
