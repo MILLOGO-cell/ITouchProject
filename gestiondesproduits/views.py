@@ -14,6 +14,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (parsers.FormParser, parsers.MultiPartParser, parsers.FileUploadParser)
     pagination_class = None
+    
     serializer_classes = {
         'create': ProduitSerializer,
         'update': ProduitSerializer,
@@ -33,25 +34,34 @@ class ProductViewSet(viewsets.ModelViewSet):
             serializer.save()
 
     def get_queryset(self):
-        queryset_user = Produit.objects.filter(owner=self.request.user)  # Récupérer les produits de l'utilisateur
-        pays_id = self.request.GET.get('pays_id', None)  # Récupérer l'ID du pays choisi par l'utilisateur depuis les paramètres de la requête
-        if pays_id:
-            pays = Pays.objects.get(id=pays_id)
-            queryset_common = Produit.objects.filter(Q(pays=pays) | (Q(pays__isnull=True) & Q(owner__isnull=True)))  # Récupérer les produits communs par pays
-        else:
-            queryset_common = Produit.objects.filter(owner__isnull=True)  # Récupérer tous les produits communs (sans pays spécifié)
+        if self.action == 'list':
+            queryset_user = Produit.objects.filter(owner=self.request.user)
+            pays_id = self.request.GET.get('pays_id', None)
+            if pays_id:
+                pays = Pays.objects.get(id=pays_id)
+                queryset_common = Produit.objects.filter(Q(pays=pays) | (Q(pays__isnull=True) & Q(owner__isnull=True)))
+            else:
+                queryset_common = Produit.objects.filter(owner__isnull=True)
+            queryset = queryset_user.union(queryset_common)
+            return queryset
+        elif self.action == 'retrieve':
+            return Produit.objects.all()  # Retourner le queryset complet sans combinaison
+        elif self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return self.queryset
 
-        queryset = queryset_user.union(queryset_common)  # Combiner les deux ensembles de requêtes
-        return queryset
-    
 class CategorieViewSet(viewsets.ModelViewSet):
     queryset = Categorie.objects.all().order_by('nom')
     serializer_class = CategorieSerializer 
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = None
     
-    def perform_create(self,serializer):
-        return serializer.save(owner=self.request.user)
+    def perform_create(self, serializer):
+        if self.request.user.is_superuser:
+            # Si l'utilisateur est un administrateur, ne pas attribuer de propriétaire
+            return serializer.save(owner=None)
+        else:
+            # Si l'utilisateur est un utilisateur normal, attribuer le propriétaire
+            return serializer.save(owner=self.request.user)
     
     def create(self, request, *args, **kwargs):
         try:
@@ -60,16 +70,23 @@ class CategorieViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
-    
+        user_categories = self.queryset.filter(owner=self.request.user)
+        categories_without_owner = self.queryset.filter(owner__isnull=True)
+        return user_categories | categories_without_owner
+
 class UniteVolumeViewSet(viewsets.ModelViewSet):
     queryset = UniteVolume.objects.all().order_by('valeur')
     serializer_class = UniteVolumeSerializer 
     permission_classes = (permissions.AllowAny,)
     pagination_class = None
     
-    def perform_create(self,serializer):
-        return serializer.save(owner=self.request.user)
+    def perform_create(self, serializer):
+        if self.request.user.is_superuser:
+            # Si l'utilisateur est un administrateur, ne pas attribuer de propriétaire
+            return serializer.save(owner=None)
+        else:
+            # Si l'utilisateur est un utilisateur normal, attribuer le propriétaire
+            return serializer.save(owner=self.request.user)
     
     def create(self, request, *args, **kwargs):
         try:
@@ -95,7 +112,12 @@ class SousCategorieViewSet(viewsets.ModelViewSet):
         return self.serializer_classes.get(self.action, SousCategorieRetrieveSerializer)
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        if self.request.user.is_superuser:
+            # Si l'utilisateur est un administrateur, ne pas attribuer de propriétaire
+            return serializer.save(owner=None)
+        else:
+            # Si l'utilisateur est un utilisateur normal, attribuer le propriétaire
+            return serializer.save(owner=self.request.user)
     
     def create(self, request, *args, **kwargs):
         try:
@@ -104,7 +126,9 @@ class SousCategorieViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
+        sous_categories = self.queryset.filter(owner=self.request.user)
+        sous_categories_without_owner = self.queryset.filter(owner__isnull=True)
+        return sous_categories | sous_categories_without_owner
 
 class FabriquantViewSet(viewsets.ModelViewSet):
     queryset = Fabriquant.objects.all().order_by('nom')
@@ -113,7 +137,12 @@ class FabriquantViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        if self.request.user.is_superuser:
+            # Si l'utilisateur est un administrateur, ne pas attribuer de propriétaire
+            return serializer.save(owner=None)
+        else:
+            # Si l'utilisateur est un utilisateur normal, attribuer le propriétaire
+            return serializer.save(owner=self.request.user)
 
     def create(self, request, *args, **kwargs):
         try:
@@ -122,7 +151,9 @@ class FabriquantViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
+        fabriquant = self.queryset.filter(owner=self.request.user)
+        fabriquant_without_owner = self.queryset.filter(owner__isnull=True)
+        return fabriquant | fabriquant_without_owner
     
 class EmballageViewSet(viewsets.ModelViewSet):
     queryset = Emballage.objects.all().order_by('nom')
@@ -139,7 +170,12 @@ class EmballageViewSet(viewsets.ModelViewSet):
         return self.serializer_classes.get(self.action, EmballageRetrieveSerializer)
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        if self.request.user.is_superuser:
+            # Si l'utilisateur est un administrateur, ne pas attribuer de propriétaire
+            return serializer.save(owner=None)
+        else:
+            # Si l'utilisateur est un utilisateur normal, attribuer le propriétaire
+            return serializer.save(owner=self.request.user)
     
     def create(self, request, *args, **kwargs):
         try:
@@ -148,7 +184,9 @@ class EmballageViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
     def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
+        emballage = self.queryset.filter(owner=self.request.user)
+        emballage_without_owner = self.queryset.filter(owner__isnull=True)
+        return emballage | emballage_without_owner
 
 class TypeContenantViewSet(viewsets.ModelViewSet):
     queryset = TypeContenant.objects.all().order_by('nom')
@@ -166,7 +204,12 @@ class TypeContenantViewSet(viewsets.ModelViewSet):
         return self.serializer_classes.get(self.action, TypeContenantRetrieveSerializer)
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        if self.request.user.is_superuser:
+            # Si l'utilisateur est un administrateur, ne pas attribuer de propriétaire
+            return serializer.save(owner=None)
+        else:
+            # Si l'utilisateur est un utilisateur normal, attribuer le propriétaire
+            return serializer.save(owner=self.request.user)
 
     def create(self, request, *args, **kwargs):
         try:
@@ -175,7 +218,9 @@ class TypeContenantViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
+        type_contenant = self.queryset.filter(owner=self.request.user)
+        type_contenant_without_owner = self.queryset.filter(owner__isnull=True)
+        return type_contenant | type_contenant_without_owner
     
 class FournisseurProduitViewSet(viewsets.ModelViewSet):
     queryset = FournisseurProduit.objects.all().order_by('enseigne')
@@ -183,16 +228,23 @@ class FournisseurProduitViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
-    def perform_create(self,serializer):
-        return serializer.save(owner=self.request.user)
-
+    def perform_create(self, serializer):
+        if self.request.user.is_superuser:
+            # Si l'utilisateur est un administrateur, ne pas attribuer de propriétaire
+            return serializer.save(owner=None)
+        else:
+            # Si l'utilisateur est un utilisateur normal, attribuer le propriétaire
+            return serializer.save(owner=self.request.user)
     def create(self, request, *args, **kwargs):
         try:
             return super().create(request, *args, **kwargs)
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
     def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
+        fournisseur = self.queryset.filter(owner=self.request.user)
+        fournisseur_without_owner = self.queryset.filter(owner__isnull=True)
+        return fournisseur | fournisseur_without_owner
          
 class CommandeProduitViewSet(viewsets.ModelViewSet):
     queryset = CommandeProduit.objects.all()

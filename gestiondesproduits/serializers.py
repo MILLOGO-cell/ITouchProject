@@ -9,18 +9,19 @@ class PaysSerializer(serializers.ModelSerializer):
 class CategorieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categorie 
-        exclude =['owner']
+        # exclude =['owner']
+        fields = '__all__'
 
 class SousCategorieSerializer(serializers.ModelSerializer):
     class Meta:
         model = SousCategorie 
-        exclude =['owner']     
+        fields = '__all__'    
 
 class SousCategorieCreateSerializer(serializers.ModelSerializer):
     categorie = serializers.PrimaryKeyRelatedField(queryset=Categorie.objects.all(), write_only=True)
     class Meta:
         model = SousCategorie
-        exclude = ['owner']
+        fields = '__all__'
 
     def create(self, validated_data):
         categorie = validated_data.pop('categorie', None)
@@ -38,14 +39,14 @@ class SousCategorieRetrieveSerializer(serializers.ModelSerializer):
 class FabriquantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fabriquant 
-        exclude =['owner']
+        fields = '__all__'
 
 
 class EmballageCreateSerializer(serializers.ModelSerializer):
     fabriquant = serializers.PrimaryKeyRelatedField(queryset=Fabriquant.objects.all(), write_only=True)
     class Meta:
         model = Emballage 
-        exclude =['owner']
+        fields = '__all__'
     
     def create(self, validated_data):
         fabriquant = validated_data.pop('fabriquant', None)
@@ -62,7 +63,7 @@ class TypeContenantCreateSerializer(serializers.ModelSerializer):
     fabriquant = serializers.PrimaryKeyRelatedField(queryset=Fabriquant.objects.all(), write_only=True)
     class Meta:
         model = TypeContenant 
-        exclude =['owner']
+        fields = '__all__'
     def create(self, validated_data):
         fabriquant = validated_data.pop('fabriquant', None)
         type_contenant = TypeContenant.objects.create(fabriquant=fabriquant, **validated_data)
@@ -135,7 +136,7 @@ class ProduitRetrieveSerializer(serializers.ModelSerializer):
 class FournisseurProduitSerializer(serializers.ModelSerializer):
     class Meta:
         model = FournisseurProduit 
-        exclude =['owner']
+        fields = '__all__'
 
 class CommandeProduitIdsSerializer(serializers.ModelSerializer):
     class Meta:

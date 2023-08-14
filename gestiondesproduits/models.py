@@ -37,7 +37,7 @@ class SousCategorie(models.Model):
     def clean(self):
         # Vérifier l'unicité du nom du type de contenant pour le fabricant spécifique à l'utilisateur
         if SousCategorie.objects.filter(
-            owner=self.owner, fabriquant=self.categorie, nom=self.nom
+            owner=self.owner, categorie=self.categorie, nom=self.nom
         ).exclude(pk=self.pk).exists():
             raise ValidationError(
                 f"Une catégorie avec le nom '{self.nom}' existe déjà pour cette sous-catégorie"
