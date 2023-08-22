@@ -4,6 +4,16 @@ from rest_framework.exceptions import ValidationError
 from gestiondesproduits.serializers import ProduitSerializer
 from gestiondesproduits.models import Produit
 
+class ProduitStatistiquesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Produit
+        fields = ['id', 'nom']
+
+class StatistiquesSerializer(serializers.Serializer):
+    top_produits = ProduitStatistiquesSerializer(many=True)
+    recette_mensuelle = serializers.IntegerField()
+    total_pertes = serializers.IntegerField()
+
 
 class MonnaieSerializer(serializers.ModelSerializer):
     

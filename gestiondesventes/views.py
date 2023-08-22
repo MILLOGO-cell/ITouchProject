@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
-from .serializers import VenteSerializer, AvanceRetenuSerializer,MonnaieSerializer,ClientSerializer,CreditSerializer,PerteMaterielSerializer, DepenseVenteSerializer,ProduitVenteSerializer,ProduitConsigneSerializer,ProduitAvoirPrisSerializer,PerteVenteProduitContenantSerializer,ProduitVenteDetailsSerializer
+from .serializers import VenteSerializer, AvanceRetenuSerializer,MonnaieSerializer,ClientSerializer,CreditSerializer,PerteMaterielSerializer, DepenseVenteSerializer,StatistiquesSerializer,ProduitVenteSerializer,ProduitConsigneSerializer,ProduitAvoirPrisSerializer,PerteVenteProduitContenantSerializer,ProduitVenteDetailsSerializer
 from .models import Vente, AvanceRetenu,Monnaie,Client,Credit,PerteMateriel,DepenseVente,ProduitVente,ProduitConsigne,ProduitAvoirPris,PerteVenteProduitContenant
 from rest_framework import viewsets, permissions
 from .permissions import IsOwner
@@ -10,7 +10,17 @@ from django.dispatch import receiver
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import ProduitVente
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
+from datetime import datetime, timedelta
+from gestiondesproduits.models import Produit
+from gestiondesproduits.serializers import ProduitSerializer
+from django.db.models import F, Value
+import pytz
+from django.utils import timezone
 class VenteViewSet(viewsets.ModelViewSet):
     queryset = Vente.objects.all()
     serializer_class = VenteSerializer
@@ -32,7 +42,7 @@ class VenteViewSet(viewsets.ModelViewSet):
 
         return vente
     def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
+        return self.queryset.filter(owner=self.request.user).order_by('-date_creation')
 
     @action(detail=False, methods=['GET'])
     def vente_precedente(self, request):
@@ -174,3 +184,35 @@ class PerteVenteProduitContenantViewSet(viewsets.ModelViewSet):
         return serializer.save(owner=self.request.user)
     def get_queryset(self):
         return self.queryset.filter(owner=self.request.user)
+    
+
+
+class StatistiquesView(APIView):
+    def get(self, request, format=None):
+        # Calculer les trois produits les plus vendus
+        top_produits = ProduitVente.objects.values('produit').annotate(
+            quantite_vendue=Coalesce(Sum('quantite'), 0)
+        ).order_by('-quantite_vendue')[:3]
+
+        top_produits_ids = [item['produit'] for item in top_produits]
+
+        produits = Produit.objects.filter(id__in=top_produits_ids)
+        top_produits_serialized = ProduitSerializer(produits, many=True).data
+
+          # Calculer la recette mensuelle
+        current_date = timezone.now()
+        first_day_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC)
+        recette_mensuelle = Vente.objects.filter(date_creation__gte=first_day_of_month).aggregate(recette_mensuelle=Sum(Coalesce('recette', Value(0))))['recette_mensuelle']
+
+        # Calculer le total des pertes mensuelles
+        total_pertes = Vente.objects.filter(date_creation__gte=first_day_of_month).aggregate(total_pertes=Sum(Coalesce('manquant', Value(0))))['total_pertes']
+
+        statistiques_data = {
+            'top_produits': top_produits_serialized,
+            'recette_mensuelle': recette_mensuelle,
+            'total_pertes': total_pertes,
+        }
+
+
+        serializer = StatistiquesSerializer(statistiques_data)
+        return Response(serializer.data)
