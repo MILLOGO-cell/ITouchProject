@@ -111,7 +111,9 @@ class Pays(models.Model):
 
     def __str__(self):
         return self.nom
-
+    class Meta:
+        verbose_name = "Pays"
+        verbose_name_plural = "Pays"
 
 class Produit(models.Model): 
     owner = models.ForeignKey(to=User, on_delete=models.CASCADE,null=True, blank=True)
